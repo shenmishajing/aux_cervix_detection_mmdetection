@@ -48,6 +48,7 @@ def parse_args():
         help='ids of gpus to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
+    parser.add_argument('--debug-len', type=int, default=None, help='set debug len for train dataset')
     parser.add_argument(
         '--deterministic',
         action='store_true',
@@ -121,6 +122,8 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
+    if args.debug_len is not None:
+        cfg.data.train.debug_len = args.debug_len
     if args.gpu_ids is not None:
         cfg.gpu_ids = args.gpu_ids
     else:
