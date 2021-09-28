@@ -24,7 +24,7 @@ def get_topk_results(results, topk):
                 break
         c = m + 1
         while c < len(inds):
-            if results[c][inds[c]:-1] > results[m][inds[m]:-1]:
+            if len(results[c]) > inds[c] and results[c][inds[c], -1] > results[m][inds[m], -1]:
                 m = c
             c += 1
         if m < len(inds):
@@ -37,7 +37,7 @@ def get_topk_results(results, topk):
 
 
 def visualize_bboxes(filename, img, gt_bboxes, gt_labels, class_names, show_dir, result = None, score_thr = None, suffix = None,
-                     visualize_num_match_gt = None):
+                     visualize_num_match_gt = False, visualize_num_appr_match_gt = False):
     # calc save file path
     fname, name = osp.splitext(osp.basename(filename))
     save_filename = fname + (('_' + suffix) if suffix else '') + name
@@ -52,10 +52,11 @@ def visualize_bboxes(filename, img, gt_bboxes, gt_labels, class_names, show_dir,
             out_file = out_file,
             **show_gt_bbox_kwargs)
     else:
-        visualize_num = len(gt_bboxes)
-        if not visualize_num_match_gt:
-            visualize_num += random.randint(-3, 3)
-        result = get_topk_results(result, visualize_num)
+        if visualize_num_match_gt or visualize_num_appr_match_gt:
+            visualize_num = len(gt_bboxes)
+            if visualize_num_appr_match_gt:
+                visualize_num += random.randint(-3, 3)
+            result = get_topk_results(result, visualize_num)
         imshow_gt_det_bboxes(
             img,
             dict(gt_bboxes = gt_bboxes, gt_labels = gt_labels),
@@ -71,6 +72,7 @@ def visualize_results(dataset,
                       results = None,
                       score_thr = 0,
                       visualize_num_match_gt = False,
+                      visualize_num_appr_match_gt = False,
                       show_dir = 'work_dir',
                       suffix = ''):
     """Evaluate and show results.
@@ -100,10 +102,12 @@ def visualize_results(dataset,
             for stage_num, stage in enumerate([prim, aux]):
                 visualize_bboxes(data_info['filename'][stage_num], data_info[stage + '_img'], data_info[stage + '_gt_bboxes'],
                                  data_info[stage + '_gt_labels'], dataset.CLASSES, show_dir,
-                                 None if results is None else results[i * 2 + stage_num][0], score_thr, suffix, visualize_num_match_gt)
+                                 None if results is None else results[i * 2 + stage_num][0], score_thr, suffix, visualize_num_match_gt,
+                                 visualize_num_appr_match_gt)
         else:
             visualize_bboxes(data_info['filename'], data_info['img'], data_info['gt_bboxes'], data_info['gt_labels'], dataset.CLASSES,
-                             show_dir, None if results is None else results[i], score_thr, suffix, visualize_num_match_gt)
+                             show_dir, None if results is None else results[i], score_thr, suffix, visualize_num_match_gt,
+                             visualize_num_appr_match_gt)
         prog_bar.update()
 
 
@@ -112,6 +116,7 @@ def visualize_detectron2_results(dataset,
                                  results = None,
                                  score_thr = 0,
                                  visualize_num_match_gt = False,
+                                 visualize_num_appr_match_gt = False,
                                  show_dir = 'work_dir',
                                  suffix = ''):
     """Evaluate and show results.
@@ -131,7 +136,8 @@ def visualize_detectron2_results(dataset,
         data_info = dataset.prepare_train_img(i)
         filename = data_info['filename'].split('/')[-1].split('.')[0]
         visualize_bboxes(data_info['filename'], data_info['img'], data_info['gt_bboxes'], data_info['gt_labels'], dataset.CLASSES, show_dir,
-                         None if results is None else results[filename], score_thr, suffix, visualize_num_match_gt)
+                         None if results is None else results[filename], score_thr, suffix, visualize_num_match_gt,
+                         visualize_num_appr_match_gt)
         prog_bar.update()
 
 

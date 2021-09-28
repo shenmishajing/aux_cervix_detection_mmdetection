@@ -75,6 +75,14 @@ def parse_args():
         action = 'store_true',
         help = 'only visualize num of det bboxes as ground truth')
     parser.add_argument(
+        '--visualize-num-exactly-match-gt',
+        action = 'store_true',
+        help = 'only visualize num of det bboxes as ground truth')
+    parser.add_argument(
+        '--visualize-num-appr-match-gt',
+        action = 'store_true',
+        help = 'only visualize approximate num of det bboxes as ground truth')
+    parser.add_argument(
         '--gpu-collect',
         action = 'store_true',
         help = 'whether to use gpu to collect results.')
@@ -265,7 +273,8 @@ def main():
             dataset = build_dataset(cfg.data.test)
             suffix = '_'.join(args.checkpoint.split('/')[-2:]).split('.')[0]
             visualize_results(dataset, outputs, show_dir = args.visualize_dir, score_thr = args.visualize_score_thr,
-                              visualize_num_match_gt = args.visualize_num_match_gt, suffix = suffix)
+                              visualize_num_match_gt = args.visualize_num_match_gt or args.visualize_num_exactly_match_gt,
+                              visualize_appr_num_match_gt = args.visualize_num_appr_match_gt, suffix = suffix)
 
 
 if __name__ == '__main__':
