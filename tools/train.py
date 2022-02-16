@@ -118,18 +118,8 @@ def main():
     elif cfg.get('work_dir', None) is None:
         # use config filename as default work_dir if cfg.work_dir is None
         random.seed()
-        k = 8
-        work_dir = osp.join('./work_dirs', osp.splitext(osp.basename(args.config))[0] + '_' + ''.join(
-            random.choices(string.ascii_letters + string.digits, k = random.randint(4, k))))
-        count = 0
-        while osp.exists(work_dir):
-            work_dir = osp.join('./work_dirs', osp.splitext(osp.basename(args.config))[0] + '_' + ''.join(
-                random.choices(string.ascii_letters + string.digits, k = random.randint(4, k))))
-            count += 1
-            if count >= 100:
-                count = 0
-                k *= 2
-        cfg.work_dir = work_dir
+        wandb_id = ''.join(random.choices(string.ascii_letters + string.digits, k = 8))
+        cfg.work_dir = osp.join('./work_dirs', osp.splitext(osp.basename(args.config))[0] + '/' + wandb_id)
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
@@ -210,8 +200,9 @@ def main():
             mmdet_version = __version__ + get_git_hash()[:7],
             CLASSES = datasets[0].CLASSES)
     for hook in cfg.log_config.hooks:
-        if hook.type == 'WandbLoggerHook':
-            hook.init_kwargs.name = cfg.work_dir.split('/')[-1]
+        if 'Wandb' in hook.type:
+            hook.init_kwargs.name = cfg.work_dir.split('/')[-2]
+            hook.init_kwargs.id = wandb_id if 'wandb_id' in locals() else None
             hook.init_kwargs.config = copy.deepcopy(cfg)
             hook.init_kwargs.config.log_config.pop('hooks')
     # add an attribute for visualization convenience

@@ -4,7 +4,7 @@ log_config = dict(
     interval = 50,
     hooks = [
         dict(type = 'TextLoggerHook'),
-        dict(type = 'WandbLoggerHook',
+        dict(type = 'WandbLoggerConfigHook',
              with_step = False,
              init_kwargs = dict(project = 'your-project-name'))])
 # yapf:enable
