@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
@@ -132,14 +133,14 @@ def imshow_det_bboxes(img,
             bbox_int[1],
             f'{label_text}',
             bbox={
-                'facecolor': 'none',
+                'facecolor': 'black',
                 'alpha': 0.8,
                 'pad': 0.7,
                 'edgecolor': 'none'
             },
             color=text_color[label],
             fontsize=font_size,
-            verticalalignment='bottom',
+            verticalalignment='top',
             horizontalalignment='left')
         if segms is not None:
             color_mask = mask_color[labels[i]]
