@@ -1,4 +1,5 @@
 import re
+
 from mmcv.runner import master_only
 from mmcv.runner.hooks import HOOKS, WandbLoggerHook
 
@@ -42,6 +43,9 @@ class WandbLoggerConfigHook(WandbLoggerHook):
     @master_only
     def before_run(self, runner):
         super().before_run(runner)
+        # log config
+        self.wandb.config.update(runner.meta['config'])
+
         # log code
         if self.name is None:
             self.name = self.wandb.run.project_name()

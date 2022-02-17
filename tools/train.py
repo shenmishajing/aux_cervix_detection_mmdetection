@@ -3,9 +3,9 @@ import argparse
 import copy
 import os
 import os.path as osp
-import time
 import random
 import string
+import time
 import warnings
 
 import mmcv
@@ -158,20 +158,8 @@ def main():
     log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file = log_file, log_level = cfg.log_level)
 
-    # init the meta dict to record some important information such as
-    # environment info and seed, which will be logged
-    meta = dict()
-    # log env info
-    env_info_dict = collect_env()
-    env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
-    dash_line = '-' * 60 + '\n'
-    logger.info('Environment info:\n' + dash_line + env_info + '\n' +
-                dash_line)
-    meta['env_info'] = env_info
-    meta['config'] = cfg.pretty_text
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
-    logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
     seed = init_random_seed(args.seed)
@@ -179,8 +167,6 @@ def main():
                 f'deterministic: {args.deterministic}')
     set_random_seed(seed, deterministic = args.deterministic)
     cfg.seed = seed
-    meta['seed'] = seed
-    meta['exp_name'] = osp.basename(args.config)
 
     model = build_detector(
         cfg.model,
@@ -203,8 +189,6 @@ def main():
         if 'Wandb' in hook.type:
             hook.init_kwargs.name = cfg.work_dir.split('/')[-2]
             hook.init_kwargs.id = wandb_id if 'wandb_id' in locals() else None
-            hook.init_kwargs.config = copy.deepcopy(cfg)
-            hook.init_kwargs.config.log_config.pop('hooks')
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
     train_detector(
@@ -214,7 +198,7 @@ def main():
         distributed = distributed,
         validate = (not args.no_validate),
         timestamp = timestamp,
-        meta = meta)
+        meta = {'env_info': collect_env(), 'config': cfg.to_dict(), 'seed': seed, 'exp_name': osp.basename(args.config)})
 
 
 if __name__ == '__main__':
