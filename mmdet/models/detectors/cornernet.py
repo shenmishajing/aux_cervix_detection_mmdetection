@@ -2,8 +2,8 @@
 import torch
 
 from mmdet.core import bbox2result, bbox_mapping_back
-from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
+from ..builder import DETECTORS
 
 
 @DETECTORS.register_module()
@@ -18,10 +18,10 @@ class CornerNet(SingleStageDetector):
                  backbone,
                  neck,
                  bbox_head,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
         super(CornerNet, self).__init__(backbone, neck, bbox_head, train_cfg,
                                         test_cfg, pretrained, init_cfg)
 
@@ -45,10 +45,10 @@ class CornerNet(SingleStageDetector):
             bboxes, labels = bboxes_labels
             bboxes, scores = bboxes[:, :4], bboxes[:, -1:]
             bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip)
-            recovered_bboxes.append(torch.cat([bboxes, scores], dim=-1))
+            recovered_bboxes.append(torch.cat([bboxes, scores], dim = -1))
             aug_labels.append(labels)
 
-        bboxes = torch.cat(recovered_bboxes, dim=0)
+        bboxes = torch.cat(recovered_bboxes, dim = 0)
         labels = torch.cat(aug_labels)
 
         if bboxes.shape[0] > 0:
@@ -59,7 +59,7 @@ class CornerNet(SingleStageDetector):
 
         return out_bboxes, out_labels
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         """Augment testing of CornerNet.
 
         Args:

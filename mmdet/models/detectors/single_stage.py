@@ -4,8 +4,8 @@ import warnings
 import torch
 
 from mmdet.core import bbox2result
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 
 
 @DETECTORS.register_module()
@@ -18,12 +18,12 @@ class SingleStageDetector(BaseDetector):
 
     def __init__(self,
                  backbone,
-                 neck=None,
-                 bbox_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 neck = None,
+                 bbox_head = None,
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
         super(SingleStageDetector, self).__init__(init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
@@ -32,8 +32,8 @@ class SingleStageDetector(BaseDetector):
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
-        bbox_head.update(train_cfg=train_cfg)
-        bbox_head.update(test_cfg=test_cfg)
+        bbox_head.update(train_cfg = train_cfg)
+        bbox_head.update(test_cfg = test_cfg)
         self.bbox_head = build_head(bbox_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -59,7 +59,8 @@ class SingleStageDetector(BaseDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None):
+                      gt_bboxes_ignore = None,
+                      **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -84,7 +85,7 @@ class SingleStageDetector(BaseDetector):
                                               gt_labels, gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale = False, **kwargs):
         """Test function without test-time augmentation.
 
         Args:
@@ -100,14 +101,14 @@ class SingleStageDetector(BaseDetector):
         """
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(
-            feat, img_metas, rescale=rescale)
+            feat, img_metas, rescale = rescale)
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in results_list
         ]
         return bbox_results
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         """Test function with test time augmentation.
 
         Args:
@@ -131,14 +132,14 @@ class SingleStageDetector(BaseDetector):
 
         feats = self.extract_feats(imgs)
         results_list = self.bbox_head.aug_test(
-            feats, img_metas, rescale=rescale)
+            feats, img_metas, rescale = rescale)
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in results_list
         ]
         return bbox_results
 
-    def onnx_export(self, img, img_metas, with_nms=True):
+    def onnx_export(self, img, img_metas, with_nms = True):
         """Test function without test time augmentation.
 
         Args:
@@ -166,6 +167,6 @@ class SingleStageDetector(BaseDetector):
             outs = (*outs, None)
         # TODO Can we change to `get_bboxes` when `onnx_export` fail
         det_bboxes, det_labels = self.bbox_head.onnx_export(
-            *outs, img_metas, with_nms=with_nms)
+            *outs, img_metas, with_nms = with_nms)
 
         return det_bboxes, det_labels

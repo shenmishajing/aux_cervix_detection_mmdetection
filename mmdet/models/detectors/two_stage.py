@@ -3,8 +3,8 @@ import warnings
 
 import torch
 
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 
 
 @DETECTORS.register_module()
@@ -17,13 +17,13 @@ class TwoStageDetector(BaseDetector):
 
     def __init__(self,
                  backbone,
-                 neck=None,
-                 rpn_head=None,
-                 roi_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 neck = None,
+                 rpn_head = None,
+                 roi_head = None,
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
         super(TwoStageDetector, self).__init__(init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
@@ -37,15 +37,15 @@ class TwoStageDetector(BaseDetector):
         if rpn_head is not None:
             rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
             rpn_head_ = rpn_head.copy()
-            rpn_head_.update(train_cfg=rpn_train_cfg, test_cfg=test_cfg.rpn)
+            rpn_head_.update(train_cfg = rpn_train_cfg, test_cfg = test_cfg.rpn)
             self.rpn_head = build_head(rpn_head_)
 
         if roi_head is not None:
             # update train and test cfg here for now
             # TODO: refactor assigner & sampler
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
-            roi_head.update(train_cfg=rcnn_train_cfg)
-            roi_head.update(test_cfg=test_cfg.rcnn)
+            roi_head.update(train_cfg = rcnn_train_cfg)
+            roi_head.update(test_cfg = test_cfg.rcnn)
             roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
@@ -80,11 +80,11 @@ class TwoStageDetector(BaseDetector):
         # rpn
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
-            outs = outs + (rpn_outs, )
+            outs = outs + (rpn_outs,)
         proposals = torch.randn(1000, 4).to(img.device)
         # roi_head
         roi_outs = self.roi_head.forward_dummy(x, proposals)
-        outs = outs + (roi_outs, )
+        outs = outs + (roi_outs,)
         return outs
 
     def forward_train(self,
@@ -92,9 +92,9 @@ class TwoStageDetector(BaseDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      proposals=None,
+                      gt_bboxes_ignore = None,
+                      gt_masks = None,
+                      proposals = None,
                       **kwargs):
         """
         Args:
@@ -136,9 +136,9 @@ class TwoStageDetector(BaseDetector):
                 x,
                 img_metas,
                 gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg,
+                gt_labels = None,
+                gt_bboxes_ignore = gt_bboxes_ignore,
+                proposal_cfg = proposal_cfg,
                 **kwargs)
             losses.update(rpn_losses)
         else:
@@ -155,8 +155,9 @@ class TwoStageDetector(BaseDetector):
     async def async_simple_test(self,
                                 img,
                                 img_meta,
-                                proposals=None,
-                                rescale=False):
+                                proposals = None,
+                                rescale = False,
+                                **kwargs):
         """Async test without augmentation."""
         assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
@@ -168,9 +169,9 @@ class TwoStageDetector(BaseDetector):
             proposal_list = proposals
 
         return await self.roi_head.async_simple_test(
-            x, proposal_list, img_meta, rescale=rescale)
+            x, proposal_list, img_meta, rescale = rescale)
 
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
+    def simple_test(self, img, img_metas, proposals = None, rescale = False, **kwargs):
         """Test without augmentation."""
 
         assert self.with_bbox, 'Bbox head must be implemented.'
@@ -181,9 +182,9 @@ class TwoStageDetector(BaseDetector):
             proposal_list = proposals
 
         return self.roi_head.simple_test(
-            x, proposal_list, img_metas, rescale=rescale)
+            x, proposal_list, img_metas, rescale = rescale)
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
@@ -192,7 +193,7 @@ class TwoStageDetector(BaseDetector):
         x = self.extract_feats(imgs)
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
         return self.roi_head.aug_test(
-            x, proposal_list, img_metas, rescale=rescale)
+            x, proposal_list, img_metas, rescale = rescale)
 
     def onnx_export(self, img, img_metas):
 
@@ -207,5 +208,6 @@ class TwoStageDetector(BaseDetector):
                 f'{self.__class__.__name__} can not '
                 f'be exported to ONNX. Please refer to the '
                 f'list of supported models,'
-                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'
+                # noqa E501
             )

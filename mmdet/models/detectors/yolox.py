@@ -6,8 +6,8 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
-from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
+from ..builder import DETECTORS
 
 
 @DETECTORS.register_module()
@@ -46,14 +46,14 @@ class YOLOX(SingleStageDetector):
                  backbone,
                  neck,
                  bbox_head,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 input_size=(640, 640),
-                 size_multiplier=32,
-                 random_size_range=(15, 25),
-                 random_size_interval=10,
-                 init_cfg=None):
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 input_size = (640, 640),
+                 size_multiplier = 32,
+                 random_size_range = (15, 25),
+                 random_size_interval = 10,
+                 init_cfg = None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
                                     test_cfg, pretrained, init_cfg)
         self.rank, self.world_size = get_dist_info()
@@ -69,7 +69,8 @@ class YOLOX(SingleStageDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None):
+                      gt_bboxes_ignore = None,
+                      **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -106,9 +107,9 @@ class YOLOX(SingleStageDetector):
         if scale_x != 1 or scale_y != 1:
             img = F.interpolate(
                 img,
-                size=self._input_size,
-                mode='bilinear',
-                align_corners=False)
+                size = self._input_size,
+                mode = 'bilinear',
+                align_corners = False)
             for gt_bbox in gt_bboxes:
                 gt_bbox[..., 0::2] = gt_bbox[..., 0::2] * scale_x
                 gt_bbox[..., 1::2] = gt_bbox[..., 1::2] * scale_y

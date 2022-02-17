@@ -6,8 +6,8 @@ import torch
 from mmcv.image import tensor2imgs
 
 from mmdet.core import bbox_mapping
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 
 
 @DETECTORS.register_module()
@@ -20,8 +20,8 @@ class RPN(BaseDetector):
                  rpn_head,
                  train_cfg,
                  test_cfg,
-                 pretrained=None,
-                 init_cfg=None):
+                 pretrained = None,
+                 init_cfg = None):
         super(RPN, self).__init__(init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
@@ -30,8 +30,8 @@ class RPN(BaseDetector):
         self.backbone = build_backbone(backbone)
         self.neck = build_neck(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
-        rpn_head.update(train_cfg=rpn_train_cfg)
-        rpn_head.update(test_cfg=test_cfg.rpn)
+        rpn_head.update(train_cfg = rpn_train_cfg)
+        rpn_head.update(test_cfg = test_cfg.rpn)
         self.rpn_head = build_head(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
@@ -60,8 +60,9 @@ class RPN(BaseDetector):
     def forward_train(self,
                       img,
                       img_metas,
-                      gt_bboxes=None,
-                      gt_bboxes_ignore=None):
+                      gt_bboxes = None,
+                      gt_bboxes_ignore = None,
+                      **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -88,7 +89,7 @@ class RPN(BaseDetector):
                                              gt_bboxes_ignore)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale = False, **kwargs):
         """Test function without test time augmentation.
 
         Args:
@@ -114,7 +115,7 @@ class RPN(BaseDetector):
 
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         """Test function with test time augmentation.
 
         Args:
@@ -139,7 +140,7 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
-    def show_result(self, data, result, top_k=20, **kwargs):
+    def show_result(self, data, result, top_k = 20, **kwargs):
         """Show RPN proposals on the image.
 
         Args:
@@ -156,4 +157,4 @@ class RPN(BaseDetector):
             kwargs.pop('score_thr', None)
             kwargs.pop('text_color', None)
             kwargs['colors'] = kwargs.pop('bbox_color', 'green')
-        mmcv.imshow_bboxes(data, result, top_k=top_k, **kwargs)
+        mmcv.imshow_bboxes(data, result, top_k = top_k, **kwargs)

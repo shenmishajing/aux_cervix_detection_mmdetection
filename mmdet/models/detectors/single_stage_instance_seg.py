@@ -7,8 +7,8 @@ import numpy as np
 import torch
 
 from mmdet.core.visualization.image import imshow_det_bboxes
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 
 INF = 1e8
 
@@ -19,35 +19,35 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
     def __init__(self,
                  backbone,
-                 neck=None,
-                 bbox_head=None,
-                 mask_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 neck = None,
+                 bbox_head = None,
+                 mask_head = None,
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
 
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             backbone.pretrained = pretrained
-        super(SingleStageInstanceSegmentor, self).__init__(init_cfg=init_cfg)
+        super(SingleStageInstanceSegmentor, self).__init__(init_cfg = init_cfg)
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
         else:
             self.neck = None
         if bbox_head is not None:
-            bbox_head.update(train_cfg=copy.deepcopy(train_cfg))
-            bbox_head.update(test_cfg=copy.deepcopy(test_cfg))
+            bbox_head.update(train_cfg = copy.deepcopy(train_cfg))
+            bbox_head.update(test_cfg = copy.deepcopy(test_cfg))
             self.bbox_head = build_head(bbox_head)
         else:
             self.bbox_head = None
 
         assert mask_head, f'`mask_head` must ' \
                           f'be implemented in {self.__class__.__name__}'
-        mask_head.update(train_cfg=copy.deepcopy(train_cfg))
-        mask_head.update(test_cfg=copy.deepcopy(test_cfg))
+        mask_head.update(train_cfg = copy.deepcopy(train_cfg))
+        mask_head.update(test_cfg = copy.deepcopy(test_cfg))
         self.mask_head = build_head(mask_head)
 
         self.train_cfg = train_cfg
@@ -73,8 +73,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
                       img_metas,
                       gt_masks,
                       gt_labels,
-                      gt_bboxes=None,
-                      gt_bboxes_ignore=None,
+                      gt_bboxes = None,
+                      gt_bboxes_ignore = None,
                       **kwargs):
         """
         Args:
@@ -99,7 +99,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         """
 
         gt_masks = [
-            gt_mask.to_tensor(dtype=torch.bool, device=img.device)
+            gt_mask.to_tensor(dtype = torch.bool, device = img.device)
             for gt_mask in gt_masks
         ]
         x = self.extract_feat(img)
@@ -114,11 +114,11 @@ class SingleStageInstanceSegmentor(BaseDetector):
             # CondInst, YOLACT
             det_losses, positive_infos = self.bbox_head.loss(
                 *bbox_head_preds,
-                gt_bboxes=gt_bboxes,
-                gt_labels=gt_labels,
-                gt_masks=gt_masks,
-                img_metas=img_metas,
-                gt_bboxes_ignore=gt_bboxes_ignore,
+                gt_bboxes = gt_bboxes,
+                gt_labels = gt_labels,
+                gt_masks = gt_masks,
+                img_metas = img_metas,
+                gt_bboxes_ignore = gt_bboxes_ignore,
                 **kwargs)
             losses.update(det_losses)
         else:
@@ -129,9 +129,9 @@ class SingleStageInstanceSegmentor(BaseDetector):
             gt_labels,
             gt_masks,
             img_metas,
-            positive_infos=positive_infos,
-            gt_bboxes=gt_bboxes,
-            gt_bboxes_ignore=gt_bboxes_ignore,
+            positive_infos = positive_infos,
+            gt_bboxes = gt_bboxes,
+            gt_bboxes_ignore = gt_bboxes_ignore,
             **kwargs)
         # avoid loss override
         assert not set(mask_loss.keys()) & set(losses.keys())
@@ -139,7 +139,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         losses.update(mask_loss)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale = False, **kwargs):
         """Test function without test-time augmentation.
 
         Args:
@@ -168,12 +168,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
             outs = self.bbox_head(feat)
             # results_list is list[obj:`InstanceData`]
             results_list = self.bbox_head.get_results(
-                *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
+                *outs, img_metas = img_metas, cfg = self.test_cfg, rescale = rescale)
         else:
             results_list = None
 
         results_list = self.mask_head.simple_test(
-            feat, img_metas, rescale=rescale, instances_list=results_list)
+            feat, img_metas, rescale = rescale, instances_list = results_list)
 
         format_results_list = []
         for results in results_list:
@@ -222,7 +222,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
         if num_masks == 0:
             bbox_results = [
-                np.zeros((0, 5), dtype=np.float32)
+                np.zeros((0, 5), dtype = np.float32)
                 for _ in range(self.mask_head.num_classes)
             ]
             return bbox_results, mask_results
@@ -234,7 +234,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
             results.bboxes = results.scores.new_zeros(len(results), 4)
 
         det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
-                               dim=-1)
+                               dim = -1)
         det_bboxes = det_bboxes.detach().cpu().numpy()
         bbox_results = [
             det_bboxes[labels == i, :]
@@ -249,22 +249,22 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
         return bbox_results, mask_results
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         raise NotImplementedError
 
     def show_result(self,
                     img,
                     result,
-                    score_thr=0.3,
-                    bbox_color=(72, 101, 241),
-                    text_color=(72, 101, 241),
-                    mask_color=None,
-                    thickness=2,
-                    font_size=13,
-                    win_name='',
-                    show=False,
-                    wait_time=0,
-                    out_file=None):
+                    score_thr = 0.3,
+                    bbox_color = (72, 101, 241),
+                    text_color = (72, 101, 241),
+                    mask_color = None,
+                    thickness = 2,
+                    font_size = 13,
+                    win_name = '',
+                    show = False,
+                    wait_time = 0,
+                    out_file = None):
         """Draw `result` over `img`.
 
         Args:
@@ -311,7 +311,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         img = mmcv.imread(img)
         img = img.copy()
         labels = [
-            np.full(bbox.shape[0], i, dtype=np.int32)
+            np.full(bbox.shape[0], i, dtype = np.int32)
             for i, bbox in enumerate(bbox_result)
         ]
         labels = np.concatenate(labels)
@@ -323,21 +323,21 @@ class SingleStageInstanceSegmentor(BaseDetector):
             masks = mmcv.concat_list(mask_result)
 
             if isinstance(masks[0], torch.Tensor):
-                masks = torch.stack(masks, dim=0).detach().cpu().numpy()
+                masks = torch.stack(masks, dim = 0).detach().cpu().numpy()
             else:
-                masks = np.stack(masks, axis=0)
+                masks = np.stack(masks, axis = 0)
             # dummy bboxes
             if bboxes[:, :4].sum() == 0:
                 num_masks = len(bboxes)
-                x_any = masks.any(axis=1)
-                y_any = masks.any(axis=2)
+                x_any = masks.any(axis = 1)
+                y_any = masks.any(axis = 2)
                 for idx in range(num_masks):
                     x = np.where(x_any[idx, :])[0]
                     y = np.where(y_any[idx, :])[0]
                     if len(x) > 0 and len(y) > 0:
                         bboxes[idx, :4] = np.array(
                             [x[0], y[0], x[-1] + 1, y[-1] + 1],
-                            dtype=np.float32)
+                            dtype = np.float32)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
@@ -347,17 +347,17 @@ class SingleStageInstanceSegmentor(BaseDetector):
             bboxes,
             labels,
             masks,
-            class_names=self.CLASSES,
-            score_thr=score_thr,
-            bbox_color=bbox_color,
-            text_color=text_color,
-            mask_color=mask_color,
-            thickness=thickness,
-            font_size=font_size,
-            win_name=win_name,
-            show=show,
-            wait_time=wait_time,
-            out_file=out_file)
+            class_names = self.CLASSES,
+            score_thr = score_thr,
+            bbox_color = bbox_color,
+            text_color = text_color,
+            mask_color = mask_color,
+            thickness = thickness,
+            font_size = font_size,
+            win_name = win_name,
+            show = show,
+            wait_time = wait_time,
+            out_file = out_file)
 
         if not (show or out_file):
             return img

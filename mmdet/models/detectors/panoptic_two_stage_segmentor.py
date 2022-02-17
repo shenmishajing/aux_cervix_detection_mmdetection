@@ -2,9 +2,9 @@
 import torch
 
 from mmdet.core import bbox2roi, multiclass_nms
+from .two_stage import TwoStageDetector
 from ..builder import DETECTORS, build_head
 from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
-from .two_stage import TwoStageDetector
 
 
 @DETECTORS.register_module()
@@ -18,16 +18,16 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
     def __init__(
             self,
             backbone,
-            neck=None,
-            rpn_head=None,
-            roi_head=None,
-            train_cfg=None,
-            test_cfg=None,
-            pretrained=None,
-            init_cfg=None,
+            neck = None,
+            rpn_head = None,
+            roi_head = None,
+            train_cfg = None,
+            test_cfg = None,
+            pretrained = None,
+            init_cfg = None,
             # for panoptic segmentation
-            semantic_head=None,
-            panoptic_fusion_head=None):
+            semantic_head = None,
+            panoptic_fusion_head = None):
         super(TwoStagePanopticSegmentor,
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
                              test_cfg, pretrained, init_cfg)
@@ -36,12 +36,12 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         if panoptic_fusion_head is not None:
             panoptic_cfg = test_cfg.panoptic if test_cfg is not None else None
             panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
-            panoptic_fusion_head_.update(test_cfg=panoptic_cfg)
+            panoptic_fusion_head_.update(test_cfg = panoptic_cfg)
             self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
 
-            self.num_things_classes = self.panoptic_fusion_head.\
+            self.num_things_classes = self.panoptic_fusion_head. \
                 num_things_classes
-            self.num_stuff_classes = self.panoptic_fusion_head.\
+            self.num_stuff_classes = self.panoptic_fusion_head. \
                 num_stuff_classes
             self.num_classes = self.panoptic_fusion_head.num_classes
 
@@ -68,10 +68,10 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      gt_semantic_seg=None,
-                      proposals=None,
+                      gt_bboxes_ignore = None,
+                      gt_masks = None,
+                      gt_semantic_seg = None,
+                      proposals = None,
                       **kwargs):
         x = self.extract_feat(img)
         losses = dict()
@@ -84,9 +84,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                 x,
                 img_metas,
                 gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg)
+                gt_labels = None,
+                gt_bboxes_ignore = gt_bboxes_ignore,
+                proposal_cfg = proposal_cfg)
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
@@ -107,11 +107,11 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                          img_metas,
                          det_bboxes,
                          det_labels,
-                         rescale=False):
+                         rescale = False):
         """Simple test for mask head without augmentation."""
         img_shapes = tuple(meta['ori_shape']
                            for meta in img_metas) if rescale else tuple(
-                               meta['pad_shape'] for meta in img_metas)
+            meta['pad_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
@@ -122,7 +122,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                 masks.append(det_bboxes[0].new_zeros(out_shape))
             mask_pred = det_bboxes[0].new_zeros((0, 80, 28, 28))
             mask_results = dict(
-                masks=masks, mask_pred=mask_pred, mask_feats=None)
+                masks = masks, mask_pred = mask_pred, mask_feats = None)
             return mask_results
 
         _bboxes = [det_bboxes[i][:, :4] for i in range(len(det_bboxes))]
@@ -156,14 +156,14 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
             img_h, img_w, _ = img_shapes[i]
             mask_pred, _ = _do_paste_mask(
-                mask_pred, det_bbox, img_h, img_w, skip_empty=False)
+                mask_pred, det_bbox, img_h, img_w, skip_empty = False)
             masks.append(mask_pred)
 
         mask_results['masks'] = masks
 
         return mask_results
 
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
+    def simple_test(self, img, img_metas, proposals = None, rescale = False, **kwargs):
         """Test without Augmentation."""
         x = self.extract_feat(img)
 
@@ -173,7 +173,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             proposal_list = proposals
 
         bboxes, scores = self.roi_head.simple_test_bboxes(
-            x, img_metas, proposal_list, None, rescale=rescale)
+            x, img_metas, proposal_list, None, rescale = rescale)
 
         pan_cfg = self.test_cfg.panoptic
         # class-wise predictions
@@ -188,7 +188,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             det_labels.append(det_label)
 
         mask_results = self.simple_test_mask(
-            x, img_metas, det_bboxes, det_labels, rescale=rescale)
+            x, img_metas, det_bboxes, det_labels, rescale = rescale)
         masks = mask_results['masks']
 
         seg_preds = self.semantic_head.simple_test(x, img_metas, rescale)
@@ -198,6 +198,6 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             pan_results = self.panoptic_fusion_head.simple_test(
                 det_bboxes[i], det_labels[i], masks[i], seg_preds[i])
             pan_results = pan_results.int().detach().cpu().numpy()
-            result = dict(pan_results=pan_results)
+            result = dict(pan_results = pan_results)
             results.append(result)
         return results

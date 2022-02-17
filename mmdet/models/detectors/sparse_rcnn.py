@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
 from .two_stage import TwoStageDetector
+from ..builder import DETECTORS
 
 
 @DETECTORS.register_module()
@@ -11,16 +11,16 @@ class SparseRCNN(TwoStageDetector):
     def __init__(self, *args, **kwargs):
         super(SparseRCNN, self).__init__(*args, **kwargs)
         assert self.with_rpn, 'Sparse R-CNN and QueryInst ' \
-            'do not support external proposals'
+                              'do not support external proposals'
 
     def forward_train(self,
                       img,
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      proposals=None,
+                      gt_bboxes_ignore = None,
+                      gt_masks = None,
+                      proposals = None,
                       **kwargs):
         """Forward function of SparseR-CNN and QueryInst in train stage.
 
@@ -47,7 +47,7 @@ class SparseRCNN(TwoStageDetector):
         """
 
         assert proposals is None, 'Sparse R-CNN and QueryInst ' \
-            'do not support external proposals'
+                                  'do not support external proposals'
 
         x = self.extract_feat(img)
         proposal_boxes, proposal_features, imgs_whwh = \
@@ -59,12 +59,12 @@ class SparseRCNN(TwoStageDetector):
             img_metas,
             gt_bboxes,
             gt_labels,
-            gt_bboxes_ignore=gt_bboxes_ignore,
-            gt_masks=gt_masks,
-            imgs_whwh=imgs_whwh)
+            gt_bboxes_ignore = gt_bboxes_ignore,
+            gt_masks = gt_masks,
+            imgs_whwh = imgs_whwh)
         return roi_losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale = False, **kwargs):
         """Test function without test time augmentation.
 
         Args:
@@ -86,8 +86,8 @@ class SparseRCNN(TwoStageDetector):
             proposal_boxes,
             proposal_features,
             img_metas,
-            imgs_whwh=imgs_whwh,
-            rescale=rescale)
+            imgs_whwh = imgs_whwh,
+            rescale = rescale)
         return results
 
     def forward_dummy(self, img):
@@ -100,7 +100,7 @@ class SparseRCNN(TwoStageDetector):
         # rpn
         num_imgs = len(img)
         dummy_img_metas = [
-            dict(img_shape=(800, 1333, 3)) for _ in range(num_imgs)
+            dict(img_shape = (800, 1333, 3)) for _ in range(num_imgs)
         ]
         proposal_boxes, proposal_features, imgs_whwh = \
             self.rpn_head.simple_test_rpn(x, dummy_img_metas)

@@ -2,8 +2,8 @@
 import torch
 
 from mmdet.core import bbox2result
-from ..builder import DETECTORS, build_head
 from .single_stage import SingleStageDetector
+from ..builder import DETECTORS, build_head
 
 
 @DETECTORS.register_module()
@@ -16,10 +16,10 @@ class YOLACT(SingleStageDetector):
                  bbox_head,
                  segm_head,
                  mask_head,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
         super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
                                      test_cfg, pretrained, init_cfg)
         self.segm_head = build_head(segm_head)
@@ -40,8 +40,9 @@ class YOLACT(SingleStageDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None):
+                      gt_bboxes_ignore = None,
+                      gt_masks = None,
+                      **kwargs):
         """
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
@@ -64,7 +65,7 @@ class YOLACT(SingleStageDetector):
         """
         # convert Bitmap mask or Polygon Mask to Tensor here
         gt_masks = [
-            gt_mask.to_tensor(dtype=torch.uint8, device=img.device)
+            gt_mask.to_tensor(dtype = torch.uint8, device = img.device)
             for gt_mask in gt_masks
         ]
 
@@ -74,7 +75,7 @@ class YOLACT(SingleStageDetector):
         bbox_head_loss_inputs = (cls_score, bbox_pred) + (gt_bboxes, gt_labels,
                                                           img_metas)
         losses, sampling_results = self.bbox_head.loss(
-            *bbox_head_loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+            *bbox_head_loss_inputs, gt_bboxes_ignore = gt_bboxes_ignore)
 
         segm_head_outs = self.segm_head(x[0])
         loss_segm = self.segm_head.loss(segm_head_outs, gt_masks, gt_labels)
@@ -88,17 +89,17 @@ class YOLACT(SingleStageDetector):
 
         # check NaN and Inf
         for loss_name in losses.keys():
-            assert torch.isfinite(torch.stack(losses[loss_name]))\
-                .all().item(), '{} becomes infinite or NaN!'\
+            assert torch.isfinite(torch.stack(losses[loss_name])) \
+                .all().item(), '{} becomes infinite or NaN!' \
                 .format(loss_name)
 
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale = False, **kwargs):
         """Test function without test-time augmentation."""
         feat = self.extract_feat(img)
         det_bboxes, det_labels, det_coeffs = self.bbox_head.simple_test(
-            feat, img_metas, rescale=rescale)
+            feat, img_metas, rescale = rescale)
         bbox_results = [
             bbox2result(det_bbox, det_label, self.bbox_head.num_classes)
             for det_bbox, det_label in zip(det_bboxes, det_labels)
@@ -110,11 +111,11 @@ class YOLACT(SingleStageDetector):
             det_labels,
             det_coeffs,
             img_metas,
-            rescale=rescale)
+            rescale = rescale)
 
         return list(zip(bbox_results, segm_results))
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, imgs, img_metas, rescale = False, **kwargs):
         """Test with augmentations."""
         raise NotImplementedError(
             'YOLACT does not support test-time augmentation')

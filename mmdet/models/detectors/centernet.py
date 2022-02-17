@@ -3,8 +3,8 @@ import torch
 
 from mmdet.core import bbox2result
 from mmdet.models.builder import DETECTORS
-from ...core.utils import flip_tensor
 from .single_stage import SingleStageDetector
+from ...core.utils import flip_tensor
 
 
 @DETECTORS.register_module()
@@ -18,10 +18,10 @@ class CenterNet(SingleStageDetector):
                  backbone,
                  neck,
                  bbox_head,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None,
+                 init_cfg = None):
         super(CenterNet, self).__init__(backbone, neck, bbox_head, train_cfg,
                                         test_cfg, pretrained, init_cfg)
 
@@ -41,7 +41,7 @@ class CenterNet(SingleStageDetector):
             recovered_bboxes.append(single_result[0][0])
             aug_labels.append(single_result[0][1])
 
-        bboxes = torch.cat(recovered_bboxes, dim=0).contiguous()
+        bboxes = torch.cat(recovered_bboxes, dim = 0).contiguous()
         labels = torch.cat(aug_labels).contiguous()
         if with_nms:
             out_bboxes, out_labels = self.bbox_head._bboxes_nms(
@@ -51,7 +51,7 @@ class CenterNet(SingleStageDetector):
 
         return out_bboxes, out_labels
 
-    def aug_test(self, imgs, img_metas, rescale=True):
+    def aug_test(self, imgs, img_metas, rescale = True, **kwargs):
         """Augment testing of CenterNet. Aug test must have flipped image pair,
         and unlike CornerNet, it will perform an averaging operation on the
         feature map instead of detecting bbox.
@@ -85,8 +85,8 @@ class CenterNet(SingleStageDetector):
 
             # Feature map averaging
             center_heatmap_preds[0] = (
-                center_heatmap_preds[0][0:1] +
-                flip_tensor(center_heatmap_preds[0][1:2], flip_direction)) / 2
+                                              center_heatmap_preds[0][0:1] +
+                                              flip_tensor(center_heatmap_preds[0][1:2], flip_direction)) / 2
             wh_preds[0] = (wh_preds[0][0:1] +
                            flip_tensor(wh_preds[0][1:2], flip_direction)) / 2
 
@@ -94,8 +94,8 @@ class CenterNet(SingleStageDetector):
                 center_heatmap_preds,
                 wh_preds, [offset_preds[0][0:1]],
                 img_metas[ind],
-                rescale=rescale,
-                with_nms=False)
+                rescale = rescale,
+                with_nms = False)
             aug_results.append(bbox_list)
 
         nms_cfg = self.bbox_head.test_cfg.get('nms_cfg', None)

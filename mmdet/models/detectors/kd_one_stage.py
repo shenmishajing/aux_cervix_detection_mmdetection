@@ -3,9 +3,9 @@ import mmcv
 import torch
 from mmcv.runner import load_checkpoint
 
+from .single_stage import SingleStageDetector
 from .. import build_detector
 from ..builder import DETECTORS
-from .single_stage import SingleStageDetector
 
 
 @DETECTORS.register_module()
@@ -25,11 +25,11 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                  neck,
                  bbox_head,
                  teacher_config,
-                 teacher_ckpt=None,
-                 eval_teacher=True,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None):
+                 teacher_ckpt = None,
+                 eval_teacher = True,
+                 train_cfg = None,
+                 test_cfg = None,
+                 pretrained = None):
         super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
                          pretrained)
         self.eval_teacher = eval_teacher
@@ -39,14 +39,15 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         self.teacher_model = build_detector(teacher_config['model'])
         if teacher_ckpt is not None:
             load_checkpoint(
-                self.teacher_model, teacher_ckpt, map_location='cpu')
+                self.teacher_model, teacher_ckpt, map_location = 'cpu')
 
     def forward_train(self,
                       img,
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None):
+                      gt_bboxes_ignore = None,
+                      **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -73,13 +74,13 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                                               gt_bboxes_ignore)
         return losses
 
-    def cuda(self, device=None):
+    def cuda(self, device = None):
         """Since teacher_model is registered as a plain object, it is necessary
         to put the teacher model to cuda when calling cuda function."""
-        self.teacher_model.cuda(device=device)
-        return super().cuda(device=device)
+        self.teacher_model.cuda(device = device)
+        return super().cuda(device = device)
 
-    def train(self, mode=True):
+    def train(self, mode = True):
         """Set the same train mode for teacher and student model."""
         if self.eval_teacher:
             self.teacher_model.train(False)
