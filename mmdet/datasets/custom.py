@@ -59,16 +59,18 @@ class CustomDataset(Dataset):
     def __init__(self,
                  ann_file,
                  pipeline,
-                 classes=None,
-                 data_root=None,
-                 img_prefix='',
-                 seg_prefix=None,
-                 proposal_file=None,
-                 test_mode=False,
-                 filter_empty_gt=True,
-                 file_client_args=dict(backend='disk')):
+                 classes = None,
+                 data_root = None,
+                 debug_len = None,
+                 img_prefix = '',
+                 seg_prefix = None,
+                 proposal_file = None,
+                 test_mode = False,
+                 filter_empty_gt = True,
+                 file_client_args = dict(backend = 'disk')):
         self.ann_file = ann_file
         self.data_root = data_root
+        self.debug_len = debug_len
         self.img_prefix = img_prefix
         self.seg_prefix = seg_prefix
         self.proposal_file = proposal_file
@@ -130,7 +132,10 @@ class CustomDataset(Dataset):
 
     def __len__(self):
         """Total number of samples of data."""
-        return len(self.data_infos)
+        if self.debug_len is None:
+            return len(self.data_infos)
+        else:
+            return self.debug_len
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
@@ -173,7 +178,7 @@ class CustomDataset(Dataset):
         results['mask_fields'] = []
         results['seg_fields'] = []
 
-    def _filter_imgs(self, min_size=32):
+    def _filter_imgs(self, min_size = 32):
         """Filter images too small."""
         if self.filter_empty_gt:
             warnings.warn(
@@ -190,7 +195,7 @@ class CustomDataset(Dataset):
         Images with aspect ratio greater than 1 will be set as group 1,
         otherwise group 0.
         """
-        self.flag = np.zeros(len(self), dtype=np.uint8)
+        self.flag = np.zeros(len(self), dtype = np.uint8)
         for i in range(len(self)):
             img_info = self.data_infos[i]
             if img_info['width'] / img_info['height'] > 1:
@@ -234,7 +239,7 @@ class CustomDataset(Dataset):
 
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
-        results = dict(img_info=img_info, ann_info=ann_info)
+        results = dict(img_info = img_info, ann_info = ann_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
@@ -252,14 +257,14 @@ class CustomDataset(Dataset):
         """
 
         img_info = self.data_infos[idx]
-        results = dict(img_info=img_info)
+        results = dict(img_info = img_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         return self.pipeline(results)
 
     @classmethod
-    def get_classes(cls, classes=None):
+    def get_classes(cls, classes = None):
         """Get class names of current dataset.
 
         Args:
@@ -290,11 +295,11 @@ class CustomDataset(Dataset):
 
     def evaluate(self,
                  results,
-                 metric='mAP',
-                 logger=None,
-                 proposal_nums=(100, 300, 1000),
-                 iou_thr=0.5,
-                 scale_ranges=None):
+                 metric = 'mAP',
+                 logger = None,
+                 proposal_nums = (100, 300, 1000),
+                 iou_thr = 0.5,
+                 scale_ranges = None):
         """Evaluate the dataset.
 
         Args:
@@ -327,22 +332,22 @@ class CustomDataset(Dataset):
                 mean_ap, _ = eval_map(
                     results,
                     annotations,
-                    scale_ranges=scale_ranges,
-                    iou_thr=iou_thr,
-                    dataset=self.CLASSES,
-                    logger=logger)
+                    scale_ranges = scale_ranges,
+                    iou_thr = iou_thr,
+                    dataset = self.CLASSES,
+                    logger = logger)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
         elif metric == 'recall':
             gt_bboxes = [ann['bboxes'] for ann in annotations]
             recalls = eval_recalls(
-                gt_bboxes, results, proposal_nums, iou_thr, logger=logger)
+                gt_bboxes, results, proposal_nums, iou_thr, logger = logger)
             for i, num in enumerate(proposal_nums):
                 for j, iou in enumerate(iou_thrs):
                     eval_results[f'recall@{num}@{iou}'] = recalls[i, j]
             if recalls.shape[1] > 1:
-                ar = recalls.mean(axis=1)
+                ar = recalls.mean(axis = 1)
                 for i, num in enumerate(proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
         return eval_results
@@ -360,7 +365,7 @@ class CustomDataset(Dataset):
         # count the instance number in each image
         for idx in range(len(self)):
             label = self.get_ann_info(idx)['labels']
-            unique, counts = np.unique(label, return_counts=True)
+            unique, counts = np.unique(label, return_counts = True)
             if len(unique) > 0:
                 # add the occurrence number to each class
                 instance_count[unique] += counts
