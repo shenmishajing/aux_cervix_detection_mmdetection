@@ -23,7 +23,7 @@ def _calc_dynamic_intervals(start_interval, dynamic_interval_list):
 
 class EvalHook(BaseEvalHook):
 
-    def __init__(self, *args, dynamic_intervals=None, **kwargs):
+    def __init__(self, *args, dynamic_intervals = None, **kwargs):
         super(EvalHook, self).__init__(*args, **kwargs)
 
         self.use_dynamic_intervals = dynamic_intervals is not None
@@ -53,7 +53,8 @@ class EvalHook(BaseEvalHook):
             return
 
         from mmdet.apis import single_gpu_test
-        results = single_gpu_test(runner.model, self.dataloader, show=False)
+        progress_bar = None if not hasattr(runner, 'progress_bar') else runner.progress_bar
+        results = single_gpu_test(runner.model, self.dataloader, show = False, progress_bar = progress_bar)
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
         key_score = self.evaluate(runner, results)
         if self.save_best:
@@ -65,7 +66,7 @@ class EvalHook(BaseEvalHook):
 # inherit EvalHook but BaseDistEvalHook.
 class DistEvalHook(BaseDistEvalHook):
 
-    def __init__(self, *args, dynamic_intervals=None, **kwargs):
+    def __init__(self, *args, dynamic_intervals = None, **kwargs):
         super(DistEvalHook, self).__init__(*args, **kwargs)
 
         self.use_dynamic_intervals = dynamic_intervals is not None
@@ -112,11 +113,13 @@ class DistEvalHook(BaseDistEvalHook):
             tmpdir = osp.join(runner.work_dir, '.eval_hook')
 
         from mmdet.apis import multi_gpu_test
+        progress_bar = None if not hasattr(runner, 'progress_bar') else runner.progress_bar
         results = multi_gpu_test(
             runner.model,
             self.dataloader,
-            tmpdir=tmpdir,
-            gpu_collect=self.gpu_collect)
+            tmpdir = tmpdir,
+            gpu_collect = self.gpu_collect,
+            progress_bar = progress_bar)
         if runner.rank == 0:
             print('\n')
             runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)

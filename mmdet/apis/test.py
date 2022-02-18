@@ -16,17 +16,21 @@ from mmdet.core import encode_mask_results
 
 def single_gpu_test(model,
                     data_loader,
-                    show=False,
-                    out_dir=None,
-                    show_score_thr=0.3):
+                    show = False,
+                    out_dir = None,
+                    show_score_thr = 0.3,
+                    progress_bar = None):
     model.eval()
     results = []
     dataset = data_loader.dataset
     PALETTE = dataset.PALETTE
-    prog_bar = mmcv.ProgressBar(len(dataset))
+    if progress_bar is None:
+        prog_bar = mmcv.ProgressBar(len(dataset))
+    else:
+        task_id = progress_bar.add_task(len(dataset), 'Evaluating')
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
+            result = model(return_loss = False, rescale = True, **data)
 
         batch_size = len(result)
         if show or out_dir:
@@ -53,25 +57,27 @@ def single_gpu_test(model,
                 model.module.show_result(
                     img_show,
                     result[i],
-                    bbox_color=PALETTE,
-                    text_color=PALETTE,
-                    mask_color=PALETTE,
-                    show=show,
-                    out_file=out_file,
-                    score_thr=show_score_thr)
+                    bbox_color = PALETTE,
+                    text_color = PALETTE,
+                    mask_color = PALETTE,
+                    show = show,
+                    out_file = out_file,
+                    score_thr = show_score_thr)
 
         # encode mask results
         if isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
         results.extend(result)
-
-        for _ in range(batch_size):
-            prog_bar.update()
+        if progress_bar is None:
+            for _ in range(batch_size):
+                prog_bar.update()
+        else:
+            progress_bar.update(task_id, visible = i + 1 != len(dataset))
     return results
 
 
-def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
+def multi_gpu_test(model, data_loader, tmpdir = None, gpu_collect = False, progress_bar = None):
     """Test model with multiple gpus.
 
     This method tests model with multiple gpus and collects the results
@@ -95,11 +101,14 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     dataset = data_loader.dataset
     rank, world_size = get_dist_info()
     if rank == 0:
-        prog_bar = mmcv.ProgressBar(len(dataset))
+        if progress_bar is None:
+            prog_bar = mmcv.ProgressBar(len(dataset))
+        else:
+            task_id = progress_bar.add_task(len(dataset), 'Evaluating')
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-            result = model(return_loss=False, rescale=True, **data)
+            result = model(return_loss = False, rescale = True, **data)
             # encode mask results
             if isinstance(result[0], tuple):
                 result = [(bbox_results, encode_mask_results(mask_results))
@@ -109,7 +118,11 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
         if rank == 0:
             batch_size = len(result)
             for _ in range(batch_size * world_size):
-                prog_bar.update()
+                if progress_bar is None:
+                    for _ in range(batch_size):
+                        prog_bar.update()
+                else:
+                    progress_bar.update(task_id, visible = i + 1 != len(dataset))
 
     # collect results from all ranks
     if gpu_collect:
@@ -119,21 +132,21 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     return results
 
 
-def collect_results_cpu(result_part, size, tmpdir=None):
+def collect_results_cpu(result_part, size, tmpdir = None):
     rank, world_size = get_dist_info()
     # create a tmp dir if it is not specified
     if tmpdir is None:
         MAX_LEN = 512
         # 32 is whitespace
-        dir_tensor = torch.full((MAX_LEN, ),
+        dir_tensor = torch.full((MAX_LEN,),
                                 32,
-                                dtype=torch.uint8,
-                                device='cuda')
+                                dtype = torch.uint8,
+                                device = 'cuda')
         if rank == 0:
             mmcv.mkdir_or_exist('.dist_test')
-            tmpdir = tempfile.mkdtemp(dir='.dist_test')
+            tmpdir = tempfile.mkdtemp(dir = '.dist_test')
             tmpdir = torch.tensor(
-                bytearray(tmpdir.encode()), dtype=torch.uint8, device='cuda')
+                bytearray(tmpdir.encode()), dtype = torch.uint8, device = 'cuda')
             dir_tensor[:len(tmpdir)] = tmpdir
         dist.broadcast(dir_tensor, 0)
         tmpdir = dir_tensor.cpu().numpy().tobytes().decode().rstrip()
@@ -166,14 +179,14 @@ def collect_results_gpu(result_part, size):
     rank, world_size = get_dist_info()
     # dump result part to tensor with pickle
     part_tensor = torch.tensor(
-        bytearray(pickle.dumps(result_part)), dtype=torch.uint8, device='cuda')
+        bytearray(pickle.dumps(result_part)), dtype = torch.uint8, device = 'cuda')
     # gather all result part tensor shape
-    shape_tensor = torch.tensor(part_tensor.shape, device='cuda')
+    shape_tensor = torch.tensor(part_tensor.shape, device = 'cuda')
     shape_list = [shape_tensor.clone() for _ in range(world_size)]
     dist.all_gather(shape_list, shape_tensor)
     # padding result part tensor to max length
     shape_max = torch.tensor(shape_list).max()
-    part_send = torch.zeros(shape_max, dtype=torch.uint8, device='cuda')
+    part_send = torch.zeros(shape_max, dtype = torch.uint8, device = 'cuda')
     part_send[:shape_tensor[0]] = part_tensor
     part_recv_list = [
         part_tensor.new_zeros(shape_max) for _ in range(world_size)
