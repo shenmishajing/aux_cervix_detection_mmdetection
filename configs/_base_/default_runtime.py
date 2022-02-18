@@ -3,10 +3,10 @@ checkpoint_config = dict(interval = 1)
 log_config = dict(
     interval = 50,
     hooks = [
-        dict(type = 'TextLoggerHook'),
         dict(type = 'WandbLoggerConfigHook',
              with_step = False,
-             init_kwargs = dict(project = 'your-project-name'))])
+             init_kwargs = dict(project = 'your-project-name')),
+        dict(type = 'RichProgressBarHook')])
 # yapf:enable
 custom_hooks = [dict(type = 'NumClassCheckHook')]
 
