@@ -5,7 +5,7 @@ log_config = dict(
     hooks = [
         dict(type = 'WandbLoggerConfigHook',
              with_step = False,
-             init_kwargs = dict(project = 'your-project-name')),
+             init_kwargs = dict(project = 'aux_cervix_detection')),
         dict(type = 'RichProgressBarHook')])
 # yapf:enable
 custom_hooks = [dict(type = 'NumClassCheckHook')]
