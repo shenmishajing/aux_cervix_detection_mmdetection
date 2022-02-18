@@ -79,4 +79,4 @@ data = dict(
         ann_file = data_root + 'cropped_annos/test_{modal}.json',
         img_prefix = data_root + 'cropped_img/',
         pipeline = test_pipeline))
-evaluation = dict(interval = 1, metric = 'bbox')
+evaluation = dict(interval = 1, metric = 'bbox', classwise = True)
